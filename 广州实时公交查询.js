@@ -1,10 +1,32 @@
 var lat;
 var lng;
 var bus = [];
+var station = [];
 var busNum;
-//var line
 
 getLocation();
+$ui.render({
+  views: [
+    {
+      type: "button",
+      props: {
+        title: "公交查询"
+      },
+      layout: function(make, view) {
+        make.center.equalTo(view.super);
+        make.width.equalTo(120);
+        make.height.equalTo(60);
+      },
+      events: {
+        tapped: function(sender) {
+          getLocation();
+          bus = [];
+          station = [];
+        }
+      }
+    }
+  ]
+});
 
 function getLocation() {
   $location.fetch({
@@ -45,8 +67,15 @@ function getByGps() {
     handler: function(resp) {
       var data = resp.data;
       console.info(data);
-      console.info(data.retData.bus[0].i);
-      getByStation(data.retData.bus[0].i);
+      console.info(data.retData.bus);
+
+      for (i in data.retData.bus) {
+        station.push({
+          "name": data.retData.bus[i].n,
+          "i": data.retData.bus[i].i
+        });
+      }
+      choseStation();
     }
   });
 }
@@ -80,15 +109,16 @@ function getByStation(i) {
     handler: function(resp) {
       var data = resp.data.retData.l;
       console.info(data);
-      
-      for(i in data){
+
+      for (i in data) {
         bus.push({
-          "name": data[i].rn + " " + data[i].dn, "ri": data[i].ri,
-    "rsi": data[i].rsi,
-    "num": data[i].rn
-        })
+          "name": data[i].rn + " " + data[i].dn,
+          "ri": data[i].ri,
+          "rsi": data[i].rsi,
+          "num": data[i].rn
+        });
       }
-      chose();
+      choseBus();
     }
   });
 }
@@ -162,15 +192,36 @@ function getWaitTime(rsi) {
     handler: function(resp) {
       var data = resp.data.retData.list[0];
       console.info(data);
-      if(data.count!=-1)
-        alert("下班"+ busNum +"还有"+ data.count +"站,大约需要"+ data.time +"分钟");
-      else
-        alert("尚未发车");
+      if (data.count != -1)
+        alert(
+          "下一班" +
+            busNum +
+            "还有" +
+            data.count +
+            "站,大约需要" +
+            data.time +
+            "分钟"
+        );
+      else alert("尚未发车");
     }
   });
 }
 
-function chose() {
+function choseStation() {
+  $ui.toast("请选择一个公交站")
+  $ui.menu({
+    items: station.map(function(item) {
+      return item.name;
+    }),
+    handler: function(title, idx) {
+      var i = station[idx].i;
+      getByStation(i);
+    }
+  });
+}
+
+function choseBus() {
+  $ui.toast("请选择您查询的公交车");
   $ui.menu({
     items: bus.map(function(item) {
       return item.name;
